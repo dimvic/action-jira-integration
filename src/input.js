@@ -7,7 +7,7 @@ module.exports = {
   JIRA_BASE_URL: core.getInput('jira-base-url', { required: true }),
   JIRA_PROJECT_KEY_REGEXP: core.getInput('jira-project-key-regexp', { required: false }),
 
-  PR_ENFORCE_CODE: core.getInput('pr-enforce-code', { required: false }),
+  PR_ENFORCE_ISSUE_EXISTS: core.getInput('pr-enforce-issue-exists', { required: false }),
   PR_ENFORCE_ISSUE_TYPE_REGEXP: core.getInput('pr-enforce-issue-type-regexp', { required: false }),
   PR_UPDATE_TITLE: core.getInput('pr-update-title', { required: false }) !== 'false',
   PR_UPDATE_DESCRIPTION: core.getInput('pr-update-description', { required: false }) !== 'false',

@@ -8,7 +8,7 @@ const GithubConnector = require('./github/github_connector')
 const {
   JIRA_PROJECT_KEY_REGEXP,
 
-  PR_ENFORCE_CODE,
+  PR_ENFORCE_ISSUE_EXISTS,
   // PR_ENFORCE_ISSUE_TYPE_REGEXP,
   PR_UPDATE_TITLE,
   PR_UPDATE_DESCRIPTION,
@@ -83,7 +83,7 @@ async function run() {
    * Check issue code
    */
   if (!issueCode) {
-    if (PR_ENFORCE_CODE) {
+    if (PR_ENFORCE_ISSUE_EXISTS) {
       core.setFailed('Could not read an issue code from PR title.')
     } else {
       core.info('Could not read an issue code from PR title.')
@@ -108,7 +108,7 @@ async function run() {
   /*
    * Get Jira issue
    */
-  if (!(PR_ENFORCE_CODE || PR_UPDATE_TITLE || PR_UPDATE_DESCRIPTION)) {
+  if (!(PR_ENFORCE_ISSUE_EXISTS || PR_UPDATE_TITLE || PR_UPDATE_DESCRIPTION)) {
     return;
   }
 
@@ -118,7 +118,7 @@ async function run() {
   try {
     jiraIssue = await jiraConnector.getIssue(issueCode)
   } catch (e) {
-    if (PR_ENFORCE_CODE) {
+    if (PR_ENFORCE_ISSUE_EXISTS) {
       core.setFailed('Jira issue lookup raised an error')
     } else {
       core.info('Jira issue lookup raised an error')

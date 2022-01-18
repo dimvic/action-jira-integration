@@ -18,7 +18,7 @@ inputs:
     required: false
     default: ''
 
-  pr-enforce-code:
+  pr-enforce-issue-exists:
     description: 'Whether to enforce JIRA issue codes existence in PR title.'
     required: false
     default: 'true'

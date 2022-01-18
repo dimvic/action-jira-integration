@@ -2,9 +2,9 @@ const util = require('util')
 
 const { JIRA_BASE_URL } = require('./input')
 
-const HIDDEN_MARKER_END = '<!--description-action-hidden-marker-end-->'
-const HIDDEN_MARKER_START = '<!--description-action-hidden-marker-start-->'
-const WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS = '<!--do not remove this marker, its needed to replace info when ticket title is updated -->'
+const HIDDEN_MARKER_START = '<!--action-jira-integration-start-->'
+const HIDDEN_MARKER_END = '<!--action-jira-integration-end-->'
+const WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS = '<!--do not remove this marker, needed for action-jira-integration-->'
 
 const escapeRegexp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -20,12 +20,15 @@ const getPrDescription = (oldBody, jiraIssue) => {
   const rg = new RegExp(`${hiddenMarkerStartRg}([\\s\\S]+)${hiddenMarkerEndRg}`, 'iugm')
   const bodyWithoutJiraDetails = (oldBody ?? '').replace(rg, '')
 
-  return `${bodyWithoutJiraDetails}
+  return `
+${bodyWithoutJiraDetails.trim()}
+
 ${HIDDEN_MARKER_START}
 ${WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS}
 ---
 ${addonDescription}
-${HIDDEN_MARKER_END}`
+${HIDDEN_MARKER_END}
+`.trim()
 }
 
 const buildPrDescription = (issue) => {
@@ -48,13 +51,15 @@ const buildPrDescription = (issue) => {
 <table>
 <tr>
   <td>
-    <a href="${details.url}" title="${displayKey}" target="_blank"><img alt="${details.type.name}" src="${details.type.icon}" /> ${displayKey} - ${details.summary}</a>
+    <a href="${details.url}" title="${displayKey}" target="_blank">
+      <img alt="${details.type.name}" src="${details.type.icon}" />
+      ${displayKey} - ${details.summary}
+    </a>
   </td>
 </tr>
 </table>
 ${issue.fields.description}
-
-`
+`.trim()
 }
 
 module.exports = {

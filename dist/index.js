@@ -11975,7 +11975,7 @@ var require_input = __commonJS({
       JIRA_TOKEN: core2.getInput("jira-token", { required: true }),
       JIRA_BASE_URL: core2.getInput("jira-base-url", { required: true }),
       JIRA_PROJECT_KEY_REGEXP: core2.getInput("jira-project-key-regexp", { required: false }),
-      PR_ENFORCE_CODE: core2.getInput("pr-enforce-code", { required: false }),
+      PR_ENFORCE_ISSUE_EXISTS: core2.getInput("pr-enforce-issue-exists", { required: false }),
       PR_ENFORCE_ISSUE_TYPE_REGEXP: core2.getInput("pr-enforce-issue-type-regexp", { required: false }),
       PR_UPDATE_TITLE: core2.getInput("pr-update-title", { required: false }) !== "false",
       PR_UPDATE_DESCRIPTION: core2.getInput("pr-update-description", { required: false }) !== "false",
@@ -12110,9 +12110,9 @@ var require_utils5 = __commonJS({
   "src/utils.js"(exports, module2) {
     var util = require("util");
     var { JIRA_BASE_URL } = require_input();
-    var HIDDEN_MARKER_END = "<!--description-action-hidden-marker-end-->";
-    var HIDDEN_MARKER_START = "<!--description-action-hidden-marker-start-->";
-    var WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS = "<!--do not remove this marker, its needed to replace info when ticket title is updated -->";
+    var HIDDEN_MARKER_START = "<!--action-jira-integration-start-->";
+    var HIDDEN_MARKER_END = "<!--action-jira-integration-end-->";
+    var WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS = "<!--do not remove this marker, needed for action-jira-integration-->";
     var escapeRegexp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     var getPrTitle2 = (issue) => {
       return `[${issue.key.toUpperCase()}] ${issue.fields.summary}`;
@@ -12123,12 +12123,15 @@ var require_utils5 = __commonJS({
       const hiddenMarkerEndRg = escapeRegexp(HIDDEN_MARKER_END);
       const rg = new RegExp(`${hiddenMarkerStartRg}([\\s\\S]+)${hiddenMarkerEndRg}`, "iugm");
       const bodyWithoutJiraDetails = (oldBody ?? "").replace(rg, "");
-      return `${bodyWithoutJiraDetails}
+      return `
+${bodyWithoutJiraDetails.trim()}
+
 ${HIDDEN_MARKER_START}
 ${WARNING_MESSAGE_ABOUT_HIDDEN_MARKERS}
 ---
 ${addonDescription}
-${HIDDEN_MARKER_END}`;
+${HIDDEN_MARKER_END}
+`.trim();
     };
     var buildPrDescription = (issue) => {
       const details = {
@@ -12150,13 +12153,15 @@ ${HIDDEN_MARKER_END}`;
 <table>
 <tr>
   <td>
-    <a href="${details.url}" title="${displayKey}" target="_blank"><img alt="${details.type.name}" src="${details.type.icon}" /> ${displayKey} - ${details.summary}</a>
+    <a href="${details.url}" title="${displayKey}" target="_blank">
+      <img alt="${details.type.name}" src="${details.type.icon}" />
+      ${displayKey} - ${details.summary}
+    </a>
   </td>
 </tr>
 </table>
 ${issue.fields.description}
-
-`;
+`.trim();
     };
     module2.exports = {
       inspect: (o) => util.inspect(o, { showHidden: false, depth: null }),
@@ -12176,7 +12181,7 @@ var JiraConnector = require_jira_connector();
 var GithubConnector = require_github_connector();
 var {
   JIRA_PROJECT_KEY_REGEXP,
-  PR_ENFORCE_CODE,
+  PR_ENFORCE_ISSUE_EXISTS,
   PR_UPDATE_TITLE,
   PR_UPDATE_DESCRIPTION,
   PR_ISSUE_CODE_REGEXP,
@@ -12220,7 +12225,7 @@ async function run() {
   const issueCodeMatches = title.match(new RegExp(PR_ISSUE_CODE_REGEXP)) || [];
   const issueCode = (get(issueCodeMatches, issueCodeMatches.length - 1) || "").toString().split(/\W/).map((str) => str.toUpperCase()).join("-");
   if (!issueCode) {
-    if (PR_ENFORCE_CODE) {
+    if (PR_ENFORCE_ISSUE_EXISTS) {
       core.setFailed("Could not read an issue code from PR title.");
     } else {
       core.info("Could not read an issue code from PR title.");
@@ -12235,7 +12240,7 @@ async function run() {
     return;
   }
   core.info(`Recognized Issue Code: ${issueCode}`);
-  if (!(PR_ENFORCE_CODE || PR_UPDATE_TITLE || PR_UPDATE_DESCRIPTION)) {
+  if (!(PR_ENFORCE_ISSUE_EXISTS || PR_UPDATE_TITLE || PR_UPDATE_DESCRIPTION)) {
     return;
   }
   const jiraConnector = new JiraConnector();
@@ -12243,7 +12248,7 @@ async function run() {
   try {
     jiraIssue = await jiraConnector.getIssue(issueCode);
   } catch (e) {
-    if (PR_ENFORCE_CODE) {
+    if (PR_ENFORCE_ISSUE_EXISTS) {
       core.setFailed("Jira issue lookup raised an error");
     } else {
       core.info("Jira issue lookup raised an error");
